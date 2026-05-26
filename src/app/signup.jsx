@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
@@ -20,6 +20,7 @@ export default function SignupPage() {
   ]);
   const [currentChatField, setCurrentChatField] = useState("name");
   const [chatInputType, setChatInputType] = useState("text");
+  const scrollViewRef = useRef(null);
   const pan = useRef(new Animated.ValueXY()).current;
   const panResponder = useRef(
     PanResponder.create({
@@ -38,6 +39,12 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
 
   const createdByOptions = [
     { label: "Self", value: "self" },
@@ -100,10 +107,14 @@ export default function SignupPage() {
     }
   };
 
-  const sendMessage = async () => {
-    let text = chatInput.trim();
+  const sendMessage = async (selectedOption = null) => {
+    let text = selectedOption ?? chatInput;
+    if (typeof text !== "string") {
+      text = chatInput;
+    }
+    text = text.trim();
     let inputValue = text;
-    
+
     if (currentChatField === "phone_number") {
       inputValue = botPhoneInput.trim();
       text = inputValue;
@@ -337,13 +348,31 @@ export default function SignupPage() {
               <Text style={styles.modalTitle}>AI Assistant</Text>
               <Pressable onPress={() => setShowBotModal(false)}><FontAwesome name="times" size={18} color="#fff" /></Pressable>
             </View>
-            <ScrollView contentContainerStyle={styles.chatBody}>
+            <ScrollView
+              ref={scrollViewRef}
+              style={styles.chatScroll}
+              contentContainerStyle={styles.chatBody}
+              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            >
               {messages.map((m, i) => (
                 <View key={i} style={[styles.msg, m.sender === "user" ? styles.msgUser : styles.msgBot]}>
                   <Text style={[styles.msgText, m.sender === "user" && styles.msgUserText]}>{m.text}</Text>
                 </View>
               ))}
             </ScrollView>
+            {(currentChatField === "created_by" || currentChatField === "id_type") && (
+              <View style={styles.optionRow}>
+                {(currentChatField === "created_by" ? createdByOptions : idTypeOptions).map((option) => (
+                  <Pressable
+                    key={option.value}
+                    style={styles.optionBtn}
+                    onPress={() => sendMessage(option.value)}
+                  >
+                    <Text style={styles.optionLabel}>{option.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
             <View style={styles.chatInputRow}>
               {currentChatField === "phone_number" ? (
                 <>
@@ -352,12 +381,12 @@ export default function SignupPage() {
                     onChangeFormattedText={setBotPhoneInput}
                     style={styles.chatPhoneInput}
                   />
-                  <Pressable style={styles.sendBtn} onPress={sendMessage}><FontAwesome name="send" size={14} color="#fff" /></Pressable>
+                  <Pressable style={styles.sendBtn} onPress={() => sendMessage()}><FontAwesome name="send" size={14} color="#fff" /></Pressable>
                 </>
-              ) : (
+              ) : currentChatField === "created_by" || currentChatField === "id_type" ? null : (
                 <>
                   <Mini placeholder="Type here..." value={chatInput} onChangeText={setChatInput} style={styles.chatInput} />
-                  <Pressable style={styles.sendBtn} onPress={sendMessage}><FontAwesome name="send" size={14} color="#fff" /></Pressable>
+                  <Pressable style={styles.sendBtn} onPress={() => sendMessage()}><FontAwesome name="send" size={14} color="#fff" /></Pressable>
                 </>
               )}
             </View>
@@ -393,7 +422,8 @@ const styles = StyleSheet.create({
   modalCard: { backgroundColor: "#fff", borderRadius: 26, height: "85%", overflow: "hidden", flexShrink: 0 },
   modalHeader: { backgroundColor: "#4f46e5", padding: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   modalTitle: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  chatBody: { flex: 1, padding: 12, gap: 10 },
+  chatBody: { flexGrow: 1, padding: 12, gap: 10 },
+  chatScroll: { flex: 1 },
   msg: { maxWidth: "84%", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
   msgBot: { alignSelf: "flex-start", backgroundColor: "#f3f4f6" },
   msgUser: { alignSelf: "flex-end", backgroundColor: "#4f46e5" },
@@ -402,5 +432,8 @@ const styles = StyleSheet.create({
   chatInputRow: { flexDirection: "row", alignItems: "stretch", gap: 8, borderTopWidth: 1, borderTopColor: "#f3f4f6", padding: 12 },
   chatInput: { flex: 1, marginBottom: 0 },
   chatPhoneInput: { flex: 1, marginBottom: 0 },
+  optionRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 12, paddingBottom: 12 },
+  optionBtn: { backgroundColor: "#eef2ff", borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 8 },
+  optionLabel: { color: "#3730a3", fontWeight: "700", fontSize: 14 },
   sendBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: "#4f46e5", alignItems: "center", justifyContent: "center", flexShrink: 0 },
 });

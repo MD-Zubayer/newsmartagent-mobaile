@@ -142,6 +142,7 @@ export default function LoginPage() {
           <Pressable onPress={() => setViewState("try_another_way")}>
             <Text style={styles.switchLink}>Try another way</Text>
           </Pressable>
+          <Link href="/forgot-password" style={styles.switchLink}>Forgot password?</Link>
         </>
       )}
 

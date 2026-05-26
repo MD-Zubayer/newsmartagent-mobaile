@@ -14,9 +14,11 @@
     },
     "ios": {
       "icon": "./assets/images/icon.png",
-      "supportsTabletMode": true
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.newsmartagent.mobile"
     },
     "android": {
+      "package": "com.newsmartagent.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#208AEF",
         "foregroundImage": "./assets/images/icon.png"
@@ -26,7 +28,28 @@
         "resizeMode": "contain",
         "backgroundColor": "#208AEF"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "newsmartagent.com",
+              "pathPrefix": "/reset-password"
+            },
+            {
+              "scheme": "https",
+              "host": "www.newsmartagent.com",
+              "pathPrefix": "/reset-password"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "output": "static",
@@ -45,11 +68,28 @@
             "imageWidth": 200
           }
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.1.0"
+          },
+          "extra": {
+        "enableBundleCompression": false
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9ac6f146-4a95-46b8-a926-59972bfe2e59"
+      }
     }
   }
 }

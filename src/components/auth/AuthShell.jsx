@@ -30,13 +30,21 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safe: { flex: 1, backgroundColor: "#eef2ff" },
   page: { flex: 1 },
-  content: { padding: 16, paddingTop: 30, paddingBottom: 200 },
+  content: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 40,
+  },
   card: {
     backgroundColor: "rgba(255,255,255,0.8)",
     borderRadius: 30,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.9)",
     padding: 18,
+    width: "100%",
+    maxWidth: 420,
   },
   orbTop: {
     position: "absolute",

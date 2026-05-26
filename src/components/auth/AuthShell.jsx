@@ -1,6 +1,12 @@
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import {
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AuthShell({ children }) {
   return (
@@ -10,11 +16,15 @@ export default function AuthShell({ children }) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
-        <LinearGradient colors={["#eef2ff", "#ffffff", "#f3e8ff"]} style={styles.page}>
+        <LinearGradient
+          colors={["#eef2ff", "#ffffff", "#f3e8ff"]}
+          style={styles.page}
+        >
           <View style={styles.orbTop} />
           <View style={styles.orbBottom} />
           <ScrollView
-            contentContainerStyle={styles.content}
+            style={styles.scroll}
+            contentContainerStyle={styles.contentContainer}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -30,12 +40,12 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safe: { flex: 1, backgroundColor: "#eef2ff" },
   page: { flex: 1 },
-  content: {
+  scroll: { flex: 1 },
+  contentContainer: {
     flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 40,
+    padding: 16,
+    paddingTop: 30,
+    paddingBottom: 200,
   },
   card: {
     backgroundColor: "rgba(255,255,255,0.8)",

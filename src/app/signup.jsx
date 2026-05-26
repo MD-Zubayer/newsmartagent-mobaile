@@ -1,13 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
-import { Link, router } from "expo-router";
 import AuthShell from "@/components/auth/AuthShell";
 import Field from "@/components/auth/Field";
 import PhoneField from "@/components/auth/PhoneField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SelectField from "@/components/auth/SelectField";
 import { apiRequest } from "@/lib/api";
+import { FontAwesome } from "@expo/vector-icons";
+import { Link, router } from "expo-router";
+import { useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  KeyboardAvoidingView,
+  Modal,
+  PanResponder,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,7 +27,10 @@ export default function SignupPage() {
   const [chatInput, setChatInput] = useState("");
   const [botPhoneInput, setBotPhoneInput] = useState("");
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "হ্যালো! 👋 আমি আপনার অ্যাকাউন্ট তৈরি করে দিবো।\n\nপ্রথমে, আপনার সম্পূর্ণ নাম লিখুন: " },
+    {
+      sender: "bot",
+      text: "হ্যালো! 👋 আমি আপনার অ্যাকাউন্ট তৈরি করে দিবো।\n\nপ্রথমে, আপনার সম্পূর্ণ নাম লিখুন: ",
+    },
   ]);
   const [currentChatField, setCurrentChatField] = useState("name");
   const [chatInputType, setChatInputType] = useState("text");
@@ -30,11 +44,13 @@ export default function SignupPage() {
         pan.setOffset({ x: pan.x._value, y: pan.y._value });
         pan.setValue({ x: 0, y: 0 });
       },
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
+      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
+        useNativeDriver: false,
+      }),
       onPanResponderRelease: () => {
         pan.flattenOffset();
       },
-    })
+    }),
   ).current;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -74,10 +90,13 @@ export default function SignupPage() {
 
   const passwordError = useMemo(() => {
     if (!formData.password || !formData.confirmPassword) return "";
-    return formData.password === formData.confirmPassword ? "" : "Passwords do not match!";
+    return formData.password === formData.confirmPassword
+      ? ""
+      : "Passwords do not match!";
   }, [formData.password, formData.confirmPassword]);
 
-  const setField = (key, value) => setFormData((prev) => ({ ...prev, [key]: value }));
+  const setField = (key, value) =>
+    setFormData((prev) => ({ ...prev, [key]: value }));
 
   const handleSignup = async () => {
     setError("");
@@ -123,7 +142,9 @@ export default function SignupPage() {
       return;
     }
 
-    const displayText = currentChatField.includes("password") ? "********" : text;
+    const displayText = currentChatField.includes("password")
+      ? "********"
+      : text;
     const newMessages = [...messages, { sender: "user", text: displayText }];
     let updatedFormData = { ...formData };
     let normalizedValue = text;
@@ -133,7 +154,10 @@ export default function SignupPage() {
 
     if (currentChatField === "phone_number") {
       if (!inputValue || inputValue.length < 9) {
-        setMessages([...newMessages, { sender: "bot", text: "দয়া করে একটি বৈধ ফোন নম্বর দিন!" }]);
+        setMessages([
+          ...newMessages,
+          { sender: "bot", text: "দয়া করে একটি বৈধ ফোন নম্বর দিন!" },
+        ]);
         setBotPhoneInput("");
         return;
       }
@@ -145,7 +169,10 @@ export default function SignupPage() {
       if (lower.includes("agent")) normalizedValue = "agent";
       else if (lower.includes("self")) normalizedValue = "self";
       else {
-        setMessages([...newMessages, { sender: "bot", text: "Self বা Agent লিখুন।" }]);
+        setMessages([
+          ...newMessages,
+          { sender: "bot", text: "Self বা Agent লিখুন।" },
+        ]);
         setChatInput("");
         return;
       }
@@ -156,14 +183,23 @@ export default function SignupPage() {
       if (lower.includes("agent")) normalizedValue = "agent";
       else if (lower.includes("user")) normalizedValue = "user";
       else {
-        setMessages([...newMessages, { sender: "bot", text: "User বা Agent লিখুন।" }]);
+        setMessages([
+          ...newMessages,
+          { sender: "bot", text: "User বা Agent লিখুন।" },
+        ]);
         setChatInput("");
         return;
       }
     }
 
     if (currentChatField === "confirmPassword" && text !== formData.password) {
-      setMessages([...newMessages, { sender: "bot", text: "পাসওয়ার্ড মেলেনি! দয়া করে কনফার্ম পাসওয়ার্ডটি আবার লিখুন।" }]);
+      setMessages([
+        ...newMessages,
+        {
+          sender: "bot",
+          text: "পাসওয়ার্ড মেলেনি! দয়া করে কনফার্ম পাসওয়ার্ডটি আবার লিখুন।",
+        },
+      ]);
       setChatInput("");
       return;
     }
@@ -174,15 +210,18 @@ export default function SignupPage() {
     switch (currentChatField) {
       case "name":
         nextField = "phone_number";
-        nextMsg = "দারুণ! 👍 এবার আপনার ফোন নম্বর দিন। প্রথমে দেশ সিলেক্ট করুন, তারপর নাম্বার লিখুন 📱";
+        nextMsg =
+          "দারুণ! 👍 এবার আপনার ফোন নম্বর দিন। প্রথমে দেশ সিলেক্ট করুন, তারপর নাম্বার লিখুন 📱";
         break;
       case "phone_number":
         nextField = "email";
-        nextMsg = "পরবর্তী, আপনার ইমেইল অ্যাড্রেস লিখুন:\n\n(যেমন: yourname@gmail.com)";
+        nextMsg =
+          "পরবর্তী, আপনার ইমেইল অ্যাড্রেস লিখুন:\n\n(যেমন: yourname@gmail.com)";
         break;
       case "email":
         nextField = "division";
-        nextMsg = "আপনি কোন বিভাগে থাকেন? লিখুন:\n\n(যেমন: Dhaka, Chittagong, Sylhet ইত্যাদি)";
+        nextMsg =
+          "আপনি কোন বিভাগে থাকেন? লিখুন:\n\n(যেমন: Dhaka, Chittagong, Sylhet ইত্যাদি)";
         break;
       case "division":
         nextField = "district";
@@ -194,7 +233,8 @@ export default function SignupPage() {
         break;
       case "upazila":
         nextField = "created_by";
-        nextMsg = "আপনি কি Self বা Agent হিসেবে অ্যাকাউন্ট খুলছেন?\n\n(Self / Agent লিখুন)";
+        nextMsg =
+          "আপনি কি Self বা Agent হিসেবে অ্যাকাউন্ট খুলছেন?\n\n(Self / Agent লিখুন)";
         break;
       case "created_by":
         nextField = "id_type";
@@ -206,7 +246,8 @@ export default function SignupPage() {
           nextMsg = "এজেন্টের ইউনিক ID দিন:";
         } else {
           nextField = "password";
-          nextMsg = "অ্যাকাউন্টের জন্য একটি শক্তিশালী পাসওয়ার্ড তৈরি করুন:\n\n(কমপক্ষে ৮ অক্ষর, সংখ্যা এবং বিশেষ চিহ্ন যুক্ত করুন)";
+          nextMsg =
+            "অ্যাকাউন্টের জন্য একটি শক্তিশালী পাসওয়ার্ড তৈরি করুন:\n\n(কমপক্ষে ৮ অক্ষর, সংখ্যা এবং বিশেষ চিহ্ন যুক্ত করুন)";
           nextType = "password";
         }
         break;
@@ -216,7 +257,8 @@ export default function SignupPage() {
         break;
       case "man_agent_otp_key":
         nextField = "password";
-        nextMsg = "অ্যাকাউন্টের জন্য একটি শক্তিশালী পাসওয়ার্ড তৈরি করুন:\n\n(কমপক্ষে ৮ অক্ষর, সংখ্যা এবং বিশেষ চিহ্ন যুক্ত করুন)";
+        nextMsg =
+          "অ্যাকাউন্টের জন্য একটি শক্তিশালী পাসওয়ার্ড তৈরি করুন:\n\n(কমপক্ষে ৮ অক্ষর, সংখ্যা এবং বিশেষ চিহ্ন যুক্ত করুন)";
         nextType = "password";
         break;
       case "password":
@@ -225,7 +267,13 @@ export default function SignupPage() {
         nextType = "password";
         break;
       case "confirmPassword":
-        setMessages([...newMessages, { sender: "bot", text: "✅ সব তথ্য পাওয়া গেছে!\n\nআপনার অ্যাকাউন্ট তৈরি করা হচ্ছে... দয়া করে অপেক্ষা করুন।" }]);
+        setMessages([
+          ...newMessages,
+          {
+            sender: "bot",
+            text: "✅ সব তথ্য পাওয়া গেছে!\n\nআপনার অ্যাকাউন্ট তৈরি করা হচ্ছে... দয়া করে অপেক্ষা করুন।",
+          },
+        ]);
         setChatInput("");
         setCurrentChatField("done");
         setChatInputType("none");
@@ -235,7 +283,13 @@ export default function SignupPage() {
             body: JSON.stringify(updatedFormData),
           });
           setSuccess("Account created! Verify email, then login.");
-          setMessages((prev) => [...prev, { sender: "bot", text: "অভিনন্দন! 🎉 আপনার অ্যাকাউন্ট তৈরি হয়েছে। এখন লগইন করুন।" }]);
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: "bot",
+              text: "অভিনন্দন! 🎉 আপনার অ্যাকাউন্ট তৈরি হয়েছে। এখন লগইন করুন।",
+            },
+          ]);
           setTimeout(() => {
             setShowBotModal(false);
             router.replace("/login");
@@ -245,7 +299,10 @@ export default function SignupPage() {
             err?.data && typeof err.data === "object"
               ? Object.values(err.data).flat().join(", ")
               : err.message || "Signup failed";
-          setMessages((prev) => [...prev, { sender: "bot", text: `দুঃখিত, সমস্যা হয়েছে: ${values}` }]);
+          setMessages((prev) => [
+            ...prev,
+            { sender: "bot", text: `দুঃখিত, সমস্যা হয়েছে: ${values}` },
+          ]);
           setCurrentChatField("confirmPassword");
           setChatInputType("password");
         }
@@ -262,48 +319,86 @@ export default function SignupPage() {
   return (
     <AuthShell>
       <View style={styles.header}>
-        <View style={styles.lock}><FontAwesome name="lock" size={24} color="#fff" /></View>
+        <View style={styles.lock}>
+          <FontAwesome name="lock" size={24} color="#fff" />
+        </View>
         <Text style={styles.title}>Create Account</Text>
         <Text style={styles.subtitle}>Join our community today</Text>
       </View>
 
-      <Field icon="user" placeholder="Full Name" value={formData.name} onChangeText={(v) => setField("name", v)} />
+      <Field
+        icon="user"
+        placeholder="Full Name"
+        value={formData.name}
+        onChangeText={(v) => setField("name", v)}
+      />
       <PhoneField
         value={formData.phone_number}
-        onChangeFormattedText={(text) => setFormData(prev => ({ ...prev, phone_number: text }))}
+        onChangeFormattedText={(text) =>
+          setFormData((prev) => ({ ...prev, phone_number: text }))
+        }
       />
 
-      <Field icon="envelope" placeholder="Email" value={formData.email} onChangeText={(v) => setField("email", v)} />
+      <Field
+        icon="envelope"
+        placeholder="Email"
+        value={formData.email}
+        onChangeText={(v) => setField("email", v)}
+      />
 
       <View style={styles.row3}>
-        <Mini placeholder="Division" value={formData.division} onChangeText={(v) => setField("division", v)} />
-        <Mini placeholder="District" value={formData.district} onChangeText={(v) => setField("district", v)} />
-        <Mini placeholder="Upazila" value={formData.upazila} onChangeText={(v) => setField("upazila", v)} />
+        <Mini
+          placeholder="Division"
+          value={formData.division}
+          onChangeText={(v) => setField("division", v)}
+        />
+        <Mini
+          placeholder="District"
+          value={formData.district}
+          onChangeText={(v) => setField("district", v)}
+        />
+        <Mini
+          placeholder="Upazila"
+          value={formData.upazila}
+          onChangeText={(v) => setField("upazila", v)}
+        />
       </View>
 
       <View style={styles.row2}>
-        <SelectField 
-          icon="user" 
-          placeholder="Created By" 
-          value={formData.created_by} 
+        <SelectField
+          icon="user"
+          placeholder="Created By"
+          value={formData.created_by}
           options={createdByOptions}
-          onSelect={(v) => setField("created_by", v)} 
-          style={styles.flex1} 
+          onSelect={(v) => setField("created_by", v)}
+          style={styles.flex1}
         />
-        <SelectField 
-          icon="id-badge" 
-          placeholder="ID Type" 
-          value={formData.id_type} 
+        <SelectField
+          icon="id-badge"
+          placeholder="ID Type"
+          value={formData.id_type}
           options={idTypeOptions}
-          onSelect={(v) => setField("id_type", v)} 
-          style={styles.flex1} 
+          onSelect={(v) => setField("id_type", v)}
+          style={styles.flex1}
         />
       </View>
 
       {formData.created_by === "agent" && (
         <View style={styles.row2}>
-          <Field icon="id-badge" placeholder="Agent ID" value={formData.man_agent_unique_id} onChangeText={(v) => setField("man_agent_unique_id", v)} style={styles.flex1} />
-          <Field icon="key" placeholder="OTP Key" value={formData.man_agent_otp_key} onChangeText={(v) => setField("man_agent_otp_key", v)} style={styles.flex1} />
+          <Field
+            icon="id-badge"
+            placeholder="Agent ID"
+            value={formData.man_agent_unique_id}
+            onChangeText={(v) => setField("man_agent_unique_id", v)}
+            style={styles.flex1}
+          />
+          <Field
+            icon="key"
+            placeholder="OTP Key"
+            value={formData.man_agent_otp_key}
+            onChangeText={(v) => setField("man_agent_otp_key", v)}
+            style={styles.flex1}
+          />
         </View>
       )}
 
@@ -330,33 +425,73 @@ export default function SignupPage() {
       {!!error && <Text style={styles.error}>{error}</Text>}
       {!!success && <Text style={styles.success}>{success}</Text>}
 
-      <PrimaryButton title={loading ? "Please wait..." : "Register Account"} onPress={handleSignup} />
+      <PrimaryButton
+        title={loading ? "Please wait..." : "Register Account"}
+        onPress={handleSignup}
+      />
 
-      <Link href="/login" style={styles.loginLink}>Already have an account? Login</Link>
+      <Link href="/login" style={styles.loginLink}>
+        Already have an account? Login
+      </Link>
 
-      <Animated.View style={[styles.floatingWrap, { transform: pan.getTranslateTransform() }]} {...panResponder.panHandlers}>
-        <View style={styles.bubble}><Text style={styles.bubbleText}>আমি তোমার অ্যাকাউন্ট তৈরি করে দিবো! ✨</Text></View>
+      <Animated.View
+        style={[
+          styles.floatingWrap,
+          { transform: pan.getTranslateTransform() },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.bubble}>
+          <Text style={styles.bubbleText}>
+            আমি তোমার অ্যাকাউন্ট তৈরি করে দিবো! ✨
+          </Text>
+        </View>
         <Pressable style={styles.botBtn} onPress={() => setShowBotModal(true)}>
-          <View style={styles.botCircle}><FontAwesome name="android" size={25} color="#fff" /></View>
+          <View style={styles.botCircle}>
+            <FontAwesome name="android" size={25} color="#fff" />
+          </View>
         </Pressable>
       </Animated.View>
 
-      <Modal visible={showBotModal} transparent animationType="fade" onRequestClose={() => setShowBotModal(false)}>
-        <View style={styles.modalOverlay}>
+      <Modal
+        visible={showBotModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowBotModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={80}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>AI Assistant</Text>
-              <Pressable onPress={() => setShowBotModal(false)}><FontAwesome name="times" size={18} color="#fff" /></Pressable>
+              <Pressable onPress={() => setShowBotModal(false)}>
+                <FontAwesome name="times" size={18} color="#fff" />
+              </Pressable>
             </View>
             <ScrollView
-              ref={scrollViewRef}
-              style={styles.chatScroll}
               contentContainerStyle={styles.chatBody}
-              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
             >
               {messages.map((m, i) => (
-                <View key={i} style={[styles.msg, m.sender === "user" ? styles.msgUser : styles.msgBot]}>
-                  <Text style={[styles.msgText, m.sender === "user" && styles.msgUserText]}>{m.text}</Text>
+                <View
+                  key={i}
+                  style={[
+                    styles.msg,
+                    m.sender === "user" ? styles.msgUser : styles.msgBot,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.msgText,
+                      m.sender === "user" && styles.msgUserText,
+                    ]}
+                  >
+                    {m.text}
+                  </Text>
                 </View>
               ))}
             </ScrollView>
@@ -381,17 +516,26 @@ export default function SignupPage() {
                     onChangeFormattedText={setBotPhoneInput}
                     style={styles.chatPhoneInput}
                   />
-                  <Pressable style={styles.sendBtn} onPress={() => sendMessage()}><FontAwesome name="send" size={14} color="#fff" /></Pressable>
+                  <Pressable style={styles.sendBtn} onPress={sendMessage}>
+                    <FontAwesome name="send" size={14} color="#fff" />
+                  </Pressable>
                 </>
               ) : currentChatField === "created_by" || currentChatField === "id_type" ? null : (
                 <>
-                  <Mini placeholder="Type here..." value={chatInput} onChangeText={setChatInput} style={styles.chatInput} />
-                  <Pressable style={styles.sendBtn} onPress={() => sendMessage()}><FontAwesome name="send" size={14} color="#fff" /></Pressable>
+                  <Mini
+                    placeholder="Type here..."
+                    value={chatInput}
+                    onChangeText={setChatInput}
+                    style={styles.chatInput}
+                  />
+                  <Pressable style={styles.sendBtn} onPress={sendMessage}>
+                    <FontAwesome name="send" size={14} color="#fff" />
+                  </Pressable>
                 </>
               )}
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </AuthShell>
   );
@@ -403,37 +547,116 @@ function Mini({ style, ...props }) {
 
 const styles = StyleSheet.create({
   header: { alignItems: "center", marginBottom: 16 },
-  lock: { width: 64, height: 64, borderRadius: 20, backgroundColor: "#4f46e5", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  lock: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: "#4f46e5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
   title: { fontSize: 30, fontWeight: "800", color: "#111827" },
   subtitle: { fontSize: 14, color: "#6b7280", fontWeight: "600", marginTop: 4 },
   row3: { flexDirection: "row", gap: 8, marginVertical: 6 },
   row2: { flexDirection: "row", gap: 8, marginVertical: 6 },
   flex1: { flex: 1 },
   miniWrap: { flex: 1, minHeight: 46 },
-  error: { color: "#ef4444", fontWeight: "700", fontSize: 12, textAlign: "center", marginBottom: 12, marginTop: 4 },
-  success: { color: "#16a34a", fontWeight: "700", fontSize: 12, textAlign: "center", marginBottom: 12, marginTop: 4 },
-  loginLink: { marginTop: 16, marginBottom: 20, textAlign: "center", color: "#4f46e5", fontWeight: "800" },
-  floatingWrap: { position: "absolute", top: 0, right: 8, alignItems: "flex-end" },
-  bubble: { backgroundColor: "#fff", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 10 },
+  error: {
+    color: "#ef4444",
+    fontWeight: "700",
+    fontSize: 12,
+    textAlign: "center",
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  success: {
+    color: "#16a34a",
+    fontWeight: "700",
+    fontSize: 12,
+    textAlign: "center",
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  loginLink: {
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#4f46e5",
+    fontWeight: "800",
+  },
+  floatingWrap: {
+    position: "absolute",
+    top: 0,
+    right: 8,
+    alignItems: "flex-end",
+  },
+  bubble: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
   bubbleText: { color: "#312e81", fontSize: 12, fontWeight: "700" },
   botBtn: { borderRadius: 999, overflow: "hidden" },
-  botCircle: { width: 60, height: 60, borderRadius: 999, backgroundColor: "#4f46e5", alignItems: "center", justifyContent: "center" },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(17,24,39,0.65)", justifyContent: "flex-end", padding: 0 },
-  modalCard: { backgroundColor: "#fff", borderRadius: 26, height: "85%", overflow: "hidden", flexShrink: 0 },
-  modalHeader: { backgroundColor: "#4f46e5", padding: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  botCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 999,
+    backgroundColor: "#4f46e5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(17,24,39,0.65)",
+    justifyContent: "flex-end",
+    padding: 0,
+  },
+  modalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 26,
+    height: "85%",
+    overflow: "hidden",
+    flexShrink: 0,
+  },
+  modalHeader: {
+    backgroundColor: "#4f46e5",
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   modalTitle: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  chatBody: { flexGrow: 1, padding: 12, gap: 10 },
-  chatScroll: { flex: 1 },
-  msg: { maxWidth: "84%", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  chatBody: { flex: 1, padding: 12, gap: 10 },
+  msg: {
+    maxWidth: "84%",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   msgBot: { alignSelf: "flex-start", backgroundColor: "#f3f4f6" },
   msgUser: { alignSelf: "flex-end", backgroundColor: "#4f46e5" },
   msgText: { color: "#1f2937", fontWeight: "600", fontSize: 13 },
   msgUserText: { color: "#fff" },
-  chatInputRow: { flexDirection: "row", alignItems: "stretch", gap: 8, borderTopWidth: 1, borderTopColor: "#f3f4f6", padding: 12 },
+  chatInputRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+    padding: 12,
+  },
   chatInput: { flex: 1, marginBottom: 0 },
   chatPhoneInput: { flex: 1, marginBottom: 0 },
-  optionRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 12, paddingBottom: 12 },
-  optionBtn: { backgroundColor: "#eef2ff", borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 8 },
-  optionLabel: { color: "#3730a3", fontWeight: "700", fontSize: 14 },
-  sendBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: "#4f46e5", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  sendBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#4f46e5",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
 });

@@ -76,10 +76,14 @@
             "kotlinVersion": "2.1.0"
           },
           "extra": {
-        "enableBundleCompression": false
+            "enableBundleCompression": false
           }
         }
-      ]
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,8 +1,7 @@
-import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Image } from "react-native";
-import { Ionicons, Feather } from "@expo/vector-icons";
-import { DrawerActions } from "@react-navigation/native";
-import { useNavigation, Link } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import { Link, useNavigation } from "expo-router";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TopNav() {
@@ -11,26 +10,38 @@ export default function TopNav() {
 
   const insets = useSafeAreaInsets();
 
-  const toggleView = () => setViewMode((prev) => (prev === "user" ? "agent" : "user"));
+  const toggleView = () =>
+    setViewMode((prev) => (prev === "user" ? "agent" : "user"));
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, height: 70 + insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, height: 70 + insets.top },
+      ]}
+    >
       {/* LEFT SIDE: Menu */}
       <View style={styles.leftSection}>
-        <Pressable onPress={() => navigation.dispatch(DrawerActions.openDrawer())} style={styles.menuButton}>
+        <Pressable
+          onPress={() => {
+            if (navigation.openDrawer) navigation.openDrawer();
+            else if (navigation.dispatch)
+              navigation.dispatch({ type: "OPEN_DRAWER" });
+          }}
+          style={styles.menuButton}
+        >
           <Feather name="menu" size={20} color="#4b5563" />
         </Pressable>
       </View>
 
       {/* RIGHT SIDE: Actions & Profile */}
       <View style={styles.rightSection}>
-        
         {/* Switch Button */}
-        <Pressable 
-          onPress={toggleView} 
+        <Pressable
+          onPress={toggleView}
           style={[
             styles.switchBtn,
-            viewMode === "agent" ? styles.switchBtnAgent : styles.switchBtnUser
+            viewMode === "agent" ? styles.switchBtnAgent : styles.switchBtnUser,
           ]}
         >
           <Feather name="refresh-cw" size={15} color="#fff" />
@@ -39,14 +50,15 @@ export default function TopNav() {
           </Text>
         </Pressable>
 
-
         {/* Profile Section */}
         <Link href="/profile" asChild>
           <Pressable style={styles.profileSection}>
-            <View style={[
-              styles.profileAvatar,
-              viewMode === "agent" ? styles.avatarAgent : styles.avatarUser
-            ]}>
+            <View
+              style={[
+                styles.profileAvatar,
+                viewMode === "agent" ? styles.avatarAgent : styles.avatarUser,
+              ]}
+            >
               <Text style={styles.avatarText}>JD</Text>
             </View>
             <View style={styles.onlineStatus}>
@@ -54,7 +66,6 @@ export default function TopNav() {
             </View>
           </Pressable>
         </Link>
-
       </View>
     </View>
   );

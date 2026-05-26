@@ -1,12 +1,17 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, Image, ScrollView } from "react-native";
-import { DrawerContentScrollView } from "@react-navigation/drawer";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useState } from "react";
+import {
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View
+} from "react-native";
 
 export default function Sidebar(props) {
   const currentRoute = props.state.routeNames[props.state.index];
-  
+
   // To mirror the "viewMode" functionality from the web, we'll assume "user" mode by default.
   // In a real implementation, you'd pull this from a Context or props.
   const [viewMode] = useState("user");
@@ -19,18 +24,54 @@ export default function Sidebar(props) {
     { name: "Sheet", route: "sheet", icon: "grid", roles: ["user"] },
     { name: "Docs", route: "docs", icon: "file-text", roles: ["user"] },
     { name: "Offers", route: "offers", icon: "tag", roles: ["user"] },
-    { name: "Payments", route: "payment", icon: "credit-card", roles: ["user"] },
+    {
+      name: "Payments",
+      route: "payment",
+      icon: "credit-card",
+      roles: ["user"],
+    },
     { name: "History", route: "history", icon: "clock", roles: ["user"] },
 
     { name: "Overview", route: "agent", icon: "home", roles: ["agent"] },
-    { name: "My Referrals", route: "referrals", icon: "users", roles: ["agent"] },
+    {
+      name: "My Referrals",
+      route: "referrals",
+      icon: "users",
+      roles: ["agent"],
+    },
     { name: "OTP Settings", route: "otp", icon: "key", roles: ["agent"] },
-    { name: "Accounts", route: "accounts", icon: "bar-chart-2", roles: ["agent"] },
+    {
+      name: "Accounts",
+      route: "accounts",
+      icon: "bar-chart-2",
+      roles: ["agent"],
+    },
 
-    { name: "Notifications", route: "notifications", icon: "bell", roles: ["user", "agent"] },
-    { name: "Contacts", route: "contacts", icon: "users", roles: ["user", "agent"] },
-    { name: "Smart CRM", route: "crm", icon: "filter", roles: ["user", "agent"] },
-    { name: "AI Agent", route: "aiAgent", icon: "cpu", roles: ["user", "agent"], highlight: true },
+    {
+      name: "Notifications",
+      route: "notifications",
+      icon: "bell",
+      roles: ["user", "agent"],
+    },
+    {
+      name: "Contacts",
+      route: "contacts",
+      icon: "users",
+      roles: ["user", "agent"],
+    },
+    {
+      name: "Smart CRM",
+      route: "crm",
+      icon: "filter",
+      roles: ["user", "agent"],
+    },
+    {
+      name: "AI Agent",
+      route: "aiAgent",
+      icon: "cpu",
+      roles: ["user", "agent"],
+      highlight: true,
+    },
   ];
 
   const bottomLinks = [
@@ -39,18 +80,20 @@ export default function Sidebar(props) {
     { name: "Logout", route: "logout", icon: "log-out" },
   ];
 
-  const filteredTopLinks = topLinks.filter(link => link.roles.includes(viewMode));
+  const filteredTopLinks = topLinks.filter((link) =>
+    link.roles.includes(viewMode),
+  );
 
   const NavItem = ({ name, route, icon, highlight, isLogout }) => {
     const isActive = currentRoute === route;
-    
+
     return (
       <Pressable
         style={[
           styles.navItem,
           isActive && styles.navItemActive,
           highlight && !isActive && styles.navItemSpecial,
-          isLogout && styles.navItemLogout
+          isLogout && styles.navItemLogout,
         ]}
         onPress={() => {
           if (isLogout) {
@@ -61,26 +104,41 @@ export default function Sidebar(props) {
         }}
       >
         {name === "Profile" ? (
-          <View style={[styles.profileIconBg, isActive && styles.profileIconBgActive]}>
-            <Feather name={icon} size={14} color={isActive ? "#fff" : "#4b5563"} />
+          <View
+            style={[
+              styles.profileIconBg,
+              isActive && styles.profileIconBgActive,
+            ]}
+          >
+            <Feather
+              name={icon}
+              size={14}
+              color={isActive ? "#fff" : "#4b5563"}
+            />
           </View>
         ) : (
-          <Feather 
-            name={icon} 
-            size={20} 
+          <Feather
+            name={icon}
+            size={20}
             color={
-              isActive ? "#ffffff" : 
-              isLogout ? "#ef4444" : 
-              highlight ? "#9333ea" : "#4b5563"
-            } 
+              isActive
+                ? "#ffffff"
+                : isLogout
+                  ? "#ef4444"
+                  : highlight
+                    ? "#9333ea"
+                    : "#4b5563"
+            }
           />
         )}
-        <Text style={[
-          styles.navLabel,
-          isActive && styles.navLabelActive,
-          highlight && !isActive && styles.navLabelSpecial,
-          isLogout && styles.navLabelLogout
-        ]}>
+        <Text
+          style={[
+            styles.navLabel,
+            isActive && styles.navLabelActive,
+            highlight && !isActive && styles.navLabelSpecial,
+            isLogout && styles.navLabelLogout,
+          ]}
+        >
           {name}
         </Text>
       </Pressable>
@@ -89,8 +147,7 @@ export default function Sidebar(props) {
 
   return (
     <View style={styles.container}>
-      <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContent}>
-        
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Logo Section */}
         <View style={styles.logoContainer}>
           {/* We'll use a placeholder colored box if the image doesn't exist yet */}
@@ -105,13 +162,16 @@ export default function Sidebar(props) {
             <NavItem key={link.name} {...link} />
           ))}
         </View>
-
-      </DrawerContentScrollView>
+      </ScrollView>
 
       {/* Bottom Links */}
       <View style={styles.footer}>
         {bottomLinks.map((link) => (
-          <NavItem key={link.name} {...link} isLogout={link.name === "Logout"} />
+          <NavItem
+            key={link.name}
+            {...link}
+            isLogout={link.name === "Logout"}
+          />
         ))}
       </View>
     </View>

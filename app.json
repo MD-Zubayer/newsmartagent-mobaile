@@ -13,11 +13,13 @@
       "backgroundColor": "#208AEF"
     },
     "ios": {
+      "jsEngine": "hermes",
       "icon": "./assets/images/logo-glow.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.newsmartagent.mobile"
     },
     "android": {
+      "jsEngine": "hermes",
       "package": "com.newsmartagent.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#208AEF",

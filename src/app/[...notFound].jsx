@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { clearAuthToken, getAccessToken } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
 
-export default function IndexPage() {
+export default function NotFoundRedirect() {
+  const router = useRouter();
+
   useEffect(() => {
-    const boot = async () => {
+    const redirect = async () => {
       try {
         const token = await getAccessToken();
         if (!token) {
@@ -21,14 +23,15 @@ export default function IndexPage() {
         });
 
         router.replace("/user");
-      } catch {
+      } catch (err) {
+        console.error("NotFound redirect failed", err);
         await clearAuthToken();
         router.replace("/login");
       }
     };
 
-    boot();
-  }, []);
+    redirect();
+  }, [router]);
 
   return (
     <View style={styles.container}>

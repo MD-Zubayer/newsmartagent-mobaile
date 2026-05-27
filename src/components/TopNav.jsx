@@ -1,17 +1,32 @@
 import { Feather } from "@expo/vector-icons";
-import { Link, useNavigation } from "expo-router";
-import { useState } from "react";
+import { Link, useNavigation, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TopNav() {
   const [viewMode, setViewMode] = useState("user");
   const navigation = useNavigation();
+  const router = useRouter();
 
   const insets = useSafeAreaInsets();
 
-  const toggleView = () =>
-    setViewMode((prev) => (prev === "user" ? "agent" : "user"));
+  const getCurrentMode = () => {
+    const state = navigation.getState?.();
+    const routeName = state?.routes?.[state.index]?.name;
+    return routeName === "agent" ? "agent" : "user";
+  };
+
+  useEffect(() => {
+    const currentMode = getCurrentMode();
+    setViewMode(currentMode);
+  }, [navigation]);
+
+  const toggleView = () => {
+    const nextMode = viewMode === "user" ? "agent" : "user";
+    setViewMode(nextMode);
+    router.replace(`/${nextMode}`);
+  };
 
   return (
     <View

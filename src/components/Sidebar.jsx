@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
 import {
     Pressable,
@@ -11,10 +12,23 @@ import {
 
 export default function Sidebar(props) {
   const currentRoute = props.state.routeNames[props.state.index];
+  const { logout } = useAuth();
 
-  // To mirror the "viewMode" functionality from the web, we'll assume "user" mode by default.
-  // In a real implementation, you'd pull this from a Context or props.
-  const [viewMode] = useState("user");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      if (props.navigation?.closeDrawer) {
+        props.navigation.closeDrawer();
+      }
+      router.replace("/login");
+    } catch (err) {
+      console.error("Logout failed", err);
+      router.replace("/login");
+    }
+  };
+
+  const agentRouteNames = ["agent", "referrals", "otp", "accounts"];
+  const viewMode = agentRouteNames.includes(currentRoute) ? "agent" : "user";
 
   const topLinks = [
     { name: "Overview", route: "user", icon: "home", roles: ["user"] },
@@ -97,9 +111,12 @@ export default function Sidebar(props) {
         ]}
         onPress={() => {
           if (isLogout) {
-            // handle logout
+            handleLogout();
           } else {
             router.navigate(`/(dashboard)/${route}`);
+            if (props.navigation?.closeDrawer) {
+              props.navigation.closeDrawer();
+            }
           }
         }}
       >

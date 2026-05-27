@@ -26,10 +26,10 @@ export default function LogoutPage() {
   }, [logout, router]);
 
   return (
-    <div style={styles.container}>
+    <View style={styles.container}>
       <ActivityIndicator size="large" color="#4f46e5" />
       <Text style={styles.text}>Logging out from NSA...</Text>
-    </div>
+    </View>
   );
 }
 

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
+import { BarChart, LineChart } from "react-native-gifted-charts";
 import { router } from "expo-router";
 import { clearAuthToken, getAccessToken } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -38,6 +40,82 @@ const calculateTimeLeft = (endDate) => {
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   return `${days} Days ${hours} Hours`;
+};
+
+
+const buildTrendChartData = (trendData) => {
+  const hasData = Array.isArray(trendData) && trendData.length > 0 && trendData.some((day) => (day.input_tokens || 0) + (day.output_tokens || 0) > 0);
+  const placeholderLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const displayData = hasData
+    ? trendData.slice(-7)
+    : placeholderLabels.map((label) => ({ label, input_tokens: 0, output_tokens: 0 }));
+
+  const outputData = displayData.map((day) => ({
+    value: day.output_tokens || 0,
+    label: day.label || new Date(day.date).toLocaleDateString("en-US", { weekday: "short" }),
+  }));
+
+  const inputData = displayData.map((day) => ({
+    value: day.input_tokens || 0,
+    label: day.label || new Date(day.date).toLocaleDateString("en-US", { weekday: "short" }),
+  }));
+
+  return { outputData, inputData, hasData };
+};
+
+const buildEngineChartData = (modelDistribution) => {
+  const colors = ["#8b5cf6", "#3b82f6", "#06b6d4", "#f59e0b", "#ef4444"];
+  const hasData = Array.isArray(modelDistribution) && modelDistribution.length > 0 && modelDistribution.some((item) => item.count > 0);
+  const displayData = hasData
+    ? modelDistribution
+    : [
+        { model_name: "GPT-4", count: 0 },
+        { model_name: "GPT-3.5", count: 0 },
+        { model_name: "Other", count: 0 },
+      ];
+
+  return displayData.map((model, idx) => {
+    const empty = !hasData;
+    return {
+      value: model.count || 0,
+      label: model.model_name,
+      frontColor: empty ? "#cbd5db" : colors[idx % colors.length],
+      showTopLabel: !empty,
+      topLabelComponent: () => (
+        <Text style={styles.chartTopLabel}>{(model.count || 0).toLocaleString()} Req</Text>
+      ),
+    };
+  });
+};
+
+const buildPlatformStackData = (platformDistribution) => {
+  const hasData = Array.isArray(platformDistribution) && platformDistribution.some((item) => (item.input_tokens || 0) + (item.output_tokens || 0) > 0);
+  const displayData = hasData
+    ? platformDistribution
+    : [{ platform: "No Data", input_tokens: 0, output_tokens: 0 }];
+
+  return displayData.map((item) => {
+    const input = item.input_tokens || 0;
+    const output = item.output_tokens || 0;
+    const empty = !hasData;
+    return {
+      label: item.platform ? item.platform.replace(/_/g, " ") : "No Data",
+      stacks: [
+        {
+          value: input,
+          color: empty ? "#cbd5db" : "#06b6d4",
+        },
+        {
+          value: output,
+          color: empty ? "#e5e7eb" : "#ec4899",
+        },
+      ],
+      topLabelComponent: () => (
+        <Text style={styles.chartTopLabel}>{empty ? "" : (input + output).toLocaleString()}</Text>
+      ),
+      showValuesAsTopLabel: !empty,
+    };
+  });
 };
 
 const Card = ({ title, value, subtitle, style }) => (
@@ -104,67 +182,112 @@ const PlatformRow = ({ platform, tokens, percentage, inputTokens, outputTokens }
   );
 };
 
-const TrendChart = ({ trendData }) => {
-  if (!trendData || trendData.length === 0) {
-    return (
-      <View style={styles.emptyBox}>
-        <Text style={styles.emptyText}>No trend data available</Text>
-      </View>
-    );
-  }
-
-  const maxTokens = Math.max(...trendData.map(d => Math.max(d.input_tokens || 0, d.output_tokens || 0)), 1);
-  const displayData = trendData.slice(-7); // Show last 7 days
-  const chartHeight = 150;
+const TrendChart = ({ trendData, chartWidth }) => {
+  const { outputData, inputData, hasData } = buildTrendChartData(trendData);
 
   return (
-    <View style={styles.trendChartContainer}>
-      <View style={styles.trendChartWrapper}>
-        {/* Y-axis labels */}
-        <View style={styles.yAxisLabels}>
-          <Text style={styles.yAxisLabel}>{Math.round(maxTokens)}</Text>
-          <Text style={styles.yAxisLabel}>{Math.round(maxTokens / 2)}</Text>
-          <Text style={styles.yAxisLabel}>0</Text>
-        </View>
-
-        {/* Chart bars */}
-        <View style={[styles.trendChart, { height: chartHeight }]}>
-          <View style={styles.chartBarsContainer}>
-            {displayData.map((day, idx) => {
-              const inputHeight = (day.input_tokens / maxTokens) * chartHeight;
-              const outputHeight = (day.output_tokens / maxTokens) * chartHeight;
-              const date = new Date(day.date);
-              const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short' });
-
-              return (
-                <View key={idx} style={styles.barGroup}>
-                  <View style={styles.barColumn}>
-                    <View style={[styles.bar, styles.inputBar, { height: `${(inputHeight / chartHeight) * 100}%` }]} />
-                    <View style={[styles.bar, styles.outputBar, { height: `${(outputHeight / chartHeight) * 100}%` }]} />
-                  </View>
-                  <Text style={styles.dayLabel}>{dayLabel}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      </View>
-
-      {/* Legend */}
+    <View style={styles.chartSectionCard}>
+      <Text style={styles.chartSectionTitle}>Token Usage Trend</Text>
+      <Text style={styles.chartSectionHint}>{hasData ? "Last 7 days of token usage" : "No usage yet — this area will populate once requests begin."}</Text>
+      <LineChart
+        data={outputData}
+        data2={inputData}
+        width={chartWidth}
+        height={240}
+        initialSpacing={8}
+        spacing={18}
+        color="#ec4899"
+        color2="#06b6d4"
+        areaChart={true}
+        areaChart2={true}
+        curved={true}
+        thickness={3}
+        thickness2={3}
+        dataPointsRadius={0}
+        dataPointsRadius2={0}
+        xAxisLabelTextStyle={styles.chartXAxisText}
+        yAxisTextStyle={styles.chartYAxisText}
+        noOfSections={4}
+        showVerticalLines={false}
+        isAnimated={true}
+        animationDuration={1200}
+      />
       <View style={styles.trendLegend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendBox, styles.inputBar]} />
-          <Text style={styles.legendText}>Input Tokens</Text>
+          <View style={[styles.legendBox, { backgroundColor: "#ec4899" }]} />
+          <Text style={styles.legendText}>Output Tokens</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendBox, styles.outputBar]} />
-          <Text style={styles.legendText}>Output Tokens</Text>
+          <View style={[styles.legendBox, { backgroundColor: "#06b6d4" }]} />
+          <Text style={styles.legendText}>Input Tokens</Text>
         </View>
       </View>
     </View>
   );
 };
 
+const EngineDistributionChart = ({ modelDistribution, chartWidth }) => {
+  const hasData = Array.isArray(modelDistribution) && modelDistribution.some((item) => item.count > 0);
+  const chartData = buildEngineChartData(hasData ? modelDistribution : []);
+
+  return (
+    <View style={styles.chartSectionCard}>
+      <Text style={styles.chartSectionTitle}>Engine Distribution</Text>
+      <Text style={styles.chartSectionHint}>{hasData ? "Which models handled the requests" : "No engine usage recorded yet."}</Text>
+      <BarChart
+        data={chartData}
+        width={chartWidth}
+        height={220}
+        barWidth={18}
+        spacing={16}
+        initialSpacing={8}
+        roundedTop={true}
+        noOfSections={3}
+        yAxisTextStyle={styles.chartYAxisText}
+        xAxisLabelTextStyle={styles.chartXAxisText}
+        isAnimated={true}
+        animationDuration={1200}
+      />
+    </View>
+  );
+};
+
+const PlatformDistributionChart = ({ platformDistribution, chartWidth }) => {
+  const hasData = Array.isArray(platformDistribution) && platformDistribution.some((item) => (item.input_tokens || 0) + (item.output_tokens || 0) > 0);
+  const chartData = buildPlatformStackData(hasData ? platformDistribution : []);
+
+  return (
+    <View style={styles.chartSectionCard}>
+      <Text style={styles.chartSectionTitle}>Platform Wise Analytics</Text>
+      <Text style={styles.chartSectionHint}>{hasData ? "Distribution by platform" : "No platform activity has been captured yet."}</Text>
+      <BarChart
+        stackData={chartData}
+        width={chartWidth}
+        height={240}
+        barWidth={24}
+        spacing={18}
+        initialSpacing={8}
+        roundedTop={true}
+        showValuesAsTopLabel={false}
+        noOfSections={4}
+        yAxisTextStyle={styles.chartYAxisText}
+        xAxisLabelTextStyle={styles.chartXAxisText}
+        isAnimated={true}
+        animationDuration={1200}
+      />
+      <View style={styles.trendLegend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendBox, { backgroundColor: "#06b6d4" }]} />
+          <Text style={styles.legendText}>Input Tokens</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendBox, { backgroundColor: "#ec4899" }]} />
+          <Text style={styles.legendText}>Output Tokens</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
 const SubscriptionCard = ({ subscription }) => {
   const totalTokens = subscription.offer?.tokens ?? 0;
   const remainingTokens = subscription.remaining_tokens ?? 0;
@@ -236,9 +359,24 @@ const ActivityRow = ({ item }) => {
   const statusColor = status === "Success" ? "#10b981" : "#ef4444";
   const inputTokens = item.input_tokens || 0;
   const outputTokens = item.output_tokens || 0;
+  const avatarUrl = item.profile_image || item.avatar || item.user?.profile_image || item.user?.avatar || item.user?.photo;
+  const initials = item.user?.name
+    ? item.user.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()
+    : item.username
+      ? item.username.slice(0, 2).toUpperCase()
+      : "NA";
 
   return (
     <View style={styles.activityItem}>
+      <View style={styles.activityAvatarWrapper}>
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.activityAvatar} />
+        ) : (
+          <View style={styles.activityAvatarFallback}>
+            <Text style={styles.activityAvatarInitials}>{initials}</Text>
+          </View>
+        )}
+      </View>
       <View style={styles.activityItemLeft}>
         <Text style={styles.activityLabel}>{label}</Text>
         <Text style={styles.activityDetail}>{item.platform || "Unknown platform"}</Text>
@@ -261,6 +399,8 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState(null);
   const [user, setUser] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
+  const { width } = useWindowDimensions();
+  const chartWidth = Math.max(width - 40, 300);
 
   const handleLogout = async () => {
     await clearAuthToken();
@@ -348,14 +488,14 @@ export default function DashboardPage() {
     <ScrollView contentContainerStyle={styles.scroll}>
       {/* Enhanced Header */}
       <View style={styles.pageHeaderWrapper}>
+        <View style={styles.healthBanner}>
+          <Text style={styles.healthLabel}>System Health</Text>
+          <Text style={styles.healthValue}>{summary.success_rate ?? 0}% Success</Text>
+        </View>
         <View style={styles.pageHeaderContent}>
           <View>
-            <Text style={styles.pageTitle}>Agent Analytics</Text>
-            <Text style={styles.pageSubtitle}>Real-time Performance Intelligence</Text>
-          </View>
-          <View style={styles.healthIndicator}>
-            <Text style={styles.healthLabel}>System Health</Text>
-            <Text style={styles.healthValue}>{summary.success_rate ?? 0}% Success</Text>
+            <Text style={styles.pageTitle}>Overview</Text>
+            <Text style={styles.pageSubtitle}>Real-time performance intelligence</Text>
           </View>
         </View>
         <View style={styles.headerDivider} />
@@ -363,28 +503,44 @@ export default function DashboardPage() {
 
       {/* Enhanced Hero Card */}
       <View style={styles.heroCard}>
-        <View style={styles.heroContent}>
-          <View>
-            <Text style={styles.heroLabel}>Total Available Balance</Text>
-            <View style={styles.heroValueWrapper}>
-              <Text style={styles.heroValue}>{Number(totalTokens).toLocaleString()}</Text>
-              <Text style={styles.heroTokenLabel}>Tokens</Text>
+                <View style={styles.heroContent}>
+            <View>
+              <Text style={styles.heroLabel}>Total Available Balance</Text>
+              <View style={styles.heroValueWrapper}>
+                <Text style={styles.heroValue}>{Number(totalTokens).toLocaleString()}</Text>
+                <Text style={styles.heroTokenLabel}>Tokens</Text>
+              </View>
             </View>
+            <View style={styles.heroDivider} />
+            <View style={styles.heroStatsRow}>
+              <View style={styles.heroStat}>
+                <Text style={styles.heroStatLabel}>Success Rate</Text>
+                <Text style={styles.heroStatValue}>{summary.success_rate ?? 0}%</Text>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStat}>
+                <Text style={styles.heroStatLabel}>Total Requests</Text>
+                <Text style={styles.heroStatValue}>{summary.total_messages ?? 0}</Text>
+              </View>
+            </View>
+            {currentSubscription && (
+              <View style={styles.subscriptionSummaryRow}>
+                <View style={styles.subscriptionSummaryItem}>
+                  <Text style={styles.subscriptionSummaryLabel}>Start</Text>
+                  <Text style={styles.subscriptionSummaryValue}>{formatDateTime(currentSubscription.start_date || currentSubscription.offer?.start_date).date}</Text>
+                </View>
+                <View style={styles.subscriptionSummaryItem}>
+                  <Text style={styles.subscriptionSummaryLabel}>End</Text>
+                  <Text style={styles.subscriptionSummaryValue}>{formatDateTime(currentSubscription.end_date || currentSubscription.offer?.end_date).date}</Text>
+                </View>
+                <View style={styles.subscriptionSummaryItem}>
+                  <Text style={styles.subscriptionSummaryLabel}>Remaining</Text>
+                  <Text style={styles.subscriptionSummaryValue}>{(currentSubscription.remaining_tokens ?? 0).toLocaleString()}</Text>
+                </View>
+              </View>
+            )}
           </View>
-          <View style={styles.heroDivider} />
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>Success Rate</Text>
-              <Text style={styles.heroStatValue}>{summary.success_rate ?? 0}%</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>Total Requests</Text>
-              <Text style={styles.heroStatValue}>{summary.total_messages ?? 0}</Text>
-            </View>
-          </View>
-        </View>
-        <Text style={styles.heroEmail}>{user?.email || "User"}</Text>
+          <Text style={styles.heroEmail}>{user?.email || "User"}</Text>
       </View>
 
       <View style={styles.cardGrid}>
@@ -429,68 +585,25 @@ export default function DashboardPage() {
         />
       </View>
 
+      {/* Token Usage Trend Section */}
+      <View style={styles.section}>
+        <TrendChart trendData={analytics?.charts?.usage_trend ?? []} chartWidth={chartWidth} />
+      </View>
+
+      {/* Engine Distribution Section */}
+      <View style={styles.section}>
+        <EngineDistributionChart modelDistribution={analytics?.charts?.model_distribution ?? []} chartWidth={chartWidth} />
+      </View>
+
+      {/* Platform Distribution Section */}
+      <View style={styles.section}>
+        <PlatformDistributionChart platformDistribution={analytics?.charts?.platform_distribution ?? []} chartWidth={chartWidth} />
+      </View>
+
       {currentSubscription && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Active Subscription</Text>
           <SubscriptionCard subscription={currentSubscription} />
-        </View>
-      )}
-
-      {/* Token Usage Trend Section */}
-      {analytics?.charts?.usage_trend && analytics.charts.usage_trend.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📈 Token Usage Trend</Text>
-            <Text style={styles.trendPeriod}>Last 7 Days</Text>
-          </View>
-          <View style={styles.trendCardContainer}>
-            <TrendChart trendData={analytics.charts.usage_trend} />
-          </View>
-        </View>
-      )}
-
-      {/* Model Distribution Section */}
-      {analytics?.charts?.model_distribution && analytics.charts.model_distribution.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🤖 Engine Distribution</Text>
-          <View style={styles.distributionContainer}>
-            {analytics.charts.model_distribution.map((model, idx) => (
-              <ModelDistributionRow
-                key={idx}
-                model={model.model_name}
-                count={model.count}
-                totalMessages={summary.total_messages ?? 1}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Platform Distribution Section */}
-      {analytics?.charts?.platform_distribution && analytics.charts.platform_distribution.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🌐 Platform Analytics</Text>
-          <View style={styles.platformContainer}>
-            {analytics.charts.platform_distribution.map((plat, idx) => {
-              const totalTokens = analytics.charts.platform_distribution.reduce(
-                (sum, p) => sum + ((p.input_tokens || 0) + (p.output_tokens || 0)),
-                0
-              );
-              const platformTokens = (plat.input_tokens || 0) + (plat.output_tokens || 0);
-              const percentage = totalTokens > 0 ? Math.round((platformTokens / totalTokens) * 100) : 0;
-              
-              return (
-                <PlatformRow
-                  key={idx}
-                  platform={plat.platform}
-                  tokens={platformTokens}
-                  percentage={percentage}
-                  inputTokens={plat.input_tokens}
-                  outputTokens={plat.output_tokens}
-                />
-              );
-            })}
-          </View>
         </View>
       )}
 
@@ -537,6 +650,38 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 12,
+  },
+  healthBanner: {
+    alignSelf: "flex-start",
+    backgroundColor: "#dcfce7",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#86efac",
+  },
+  activityAvatarWrapper: {
+    marginRight: 12,
+  },
+  activityAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#e5e7eb",
+  },
+  activityAvatarFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#c7d2fe",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activityAvatarInitials: {
+    color: "#1e293b",
+    fontWeight: "900",
+    fontSize: 14,
   },
   pageTitle: {
     fontSize: 28,
@@ -646,6 +791,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textTransform: "lowercase",
   },
+  subscriptionSummaryRow: {
+    marginTop: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  subscriptionSummaryItem: {
+    marginBottom: 12,
+  },
+  subscriptionSummaryLabel: {
+    fontSize: 10,
+    color: "#cbd5e1",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  subscriptionSummaryValue: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "900",
+  },
   cardGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -723,6 +893,62 @@ const styles = StyleSheet.create({
     color: "#111827",
     marginBottom: 14,
     letterSpacing: -0.5,
+  },
+  chartSectionCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 4,
+    overflow: "hidden",
+    width: "100%",
+  },
+  chartSectionTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#111827",
+    marginBottom: 6,
+  },
+  chartSectionHint: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginBottom: 14,
+    lineHeight: 18,
+  },
+  chartYAxisText: {
+    color: "#6b7280",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  chartXAxisText: {
+    color: "#6b7280",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  chartTopLabel: {
+    fontSize: 10,
+    color: "#111827",
+    fontWeight: "900",
+  },
+  pieCenterLabel: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 100,
+    height: 100,
+  },
+  pieCenterTitle: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#111827",
+  },
+  pieCenterSubtitle: {
+    fontSize: 10,
+    color: "#6b7280",
+    marginTop: 4,
+    textAlign: "center",
   },
   sectionHeader: {
     flexDirection: "row",
